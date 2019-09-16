@@ -1,1 +1,1 @@
-python3 ./src/main.py
+python3 ./src/main.py <<< "scan 127.0.0.1 100 200" 
