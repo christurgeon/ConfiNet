@@ -1,12 +1,14 @@
 import datetime
 import os
+import json
 from port_scanner import search
+from ip2geotools.databases.noncommercial import DbIpCity
 
-"""
-Bandwidth Monitor - A small utility program that tracks how much data you have uploaded and downloaded 
-from the net during the course of your current online session. See if you can find out what periods of 
-the day you use more and less and generate a report or graph that shows it.
-"""
+
+# TODO: fix threading issue: look into thread pool
+# TODO: fix the ip lookup, not liking the module
+# TODO: look at whois
+
 
 class TextColors:
     HEADER = '\033[95m'
@@ -30,24 +32,49 @@ def displayASCII():
     print("--quit to exit\n")
 
 
-def getMetaData(file, outfile=None):
-    output = ""
+def getMetaData(file, outfile=False):
+    metadata = ""
     try:
         stats = os.stat(file)
-        output += "File Size: " + str(stats.st_size) + " bytes\n"
-        output += "File Modified: " + str(datetime.datetime.fromtimestamp(stats.st_mtime / 1000.0)) + "\n"
-        output += "I-node: " + str(stats.st_ino) + "\n"
-        output += "Device: " + str(stats.st_dev) + "\n"
-        output += "Hardlinks: " + str(stats.st_nlink) + "\n"
-        output += "User Id (uid): " + str(stats.st_uid) + "\n"
-        output += "Group Id (gid): " + str(stats.st_gid) + "\n"
-        output += "NOTE: On a Windows systems these values may not be accurate\n"
+        metadata += "File Size: " + str(stats.st_size) + " bytes\n"
+        metadata += "File Modified: " + str(datetime.datetime.fromtimestamp(stats.st_mtime / 1000.0)) + "\n"
+        metadata += "I-node: " + str(stats.st_ino) + "\n"
+        metadata += "Device: " + str(stats.st_dev) + "\n"
+        metadata += "Hardlinks: " + str(stats.st_nlink) + "\n"
+        metadata += "User Id (uid): " + str(stats.st_uid) + "\n"
+        metadata += "Group Id (gid): " + str(stats.st_gid) + "\n"
+        metadata += "NOTE: On a Windows systems these values may not be accurate\n"
         if outfile:
-            output.write(output)
+            f = open("meta-data-"+file, "w+")
+            f.write(metadata)
+            f.close()
         else:
-            print(output)
+            print(metadata)
     except:
         print("ERROR: Failed to get information from", file)
+
+
+def getIpAddressData(ipaddr, outfile=False):
+    data = ""
+    # try:
+    response = DbIpCity.get(ipaddr, api_key="free")
+    with open("ipaddr-location.json", "w+") as f:
+        f.dump(response.to_json(), f, indent=4)
+        f.close()
+        return
+    data += reponse.ip_address + "\n"
+    data += "City: " + reponse.city + "\n"
+    data += "Country: " + reponse.country + "\n"
+    data += "Region: " + reponse.region + "\n"
+    data += "Latitude: " + reponse.latitude + "\n"
+    data += "Longitude: " + response.longitude + "\n"
+    print(data)
+    # except:
+        # print("Could not fetch location for", ipaddr)
+
+
+def whoisLookup(ipaddr, outfile=None):
+    pass
 
 
 def printHelpMenu():
@@ -84,6 +111,7 @@ if __name__ == "__main__":
     displayASCII()
     while True:
 
+        # Read in input from the user and split it
         command = str(input(TextColors.BLUE + "command$ " + TextColors.END))
         if command == "--help":
             printHelpMenu()
@@ -91,18 +119,35 @@ if __name__ == "__main__":
         if command == "--quit":
             print("\nGoodbye!")
             break
-
         tokens = command.split(" ")
-        print(tokens, end="\n")
+        argc = len(tokens)
 
+        # Scan available ports on a network
         if command.startswith("scan"):
-            if len(tokens) == 4:
+            if argc == 4:
                 search(tokens[1], tokens[2], tokens[3])
+        
+        # Get the location of the given IP address
         elif command.startswith("locate"):
-            continue
+            if argc == 2:
+                getIpAddressData(tokens[1])
+            else:
+                print("USAGE: locate 127.0.0.1")
+        
+        # Get information from the whois tool about an IP address
         elif command.startswith("whois"):
-            continue
+            if argc == 2:
+                whoisLookup(tokens[1], None)
+            else:
+                print("USAGE: whois 127.0.0.1")
+        
+        # Get meta data about a file
         elif command.startswith("meta"):
-            getMetaData(tokens[1], None)
+            if argc == 2:
+                getMetaData(tokens[1], None)
+            else:
+                print("USAGE: meta file.txt")
+
+        # Unrecognized command
         else:
             print("ERROR: Command not recognized")
