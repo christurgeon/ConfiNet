@@ -2,7 +2,7 @@
 
 ConfiNet is a command line application with useful networking tools such as port scanning, locating IP addresses, etc. It provides a wrapper to tools such as *whois*. To try it out, simply build the container, run the container, and you're off and running. 
 
-# Instructions to Run
+## Instructions to Run
 1. Upgrade *apt* and install Docker if you do not already have it installed on your machine.
 ```
 sudo apt update 
@@ -21,3 +21,11 @@ sudo service start docker
 
 3. Run the container by running the *run.sh* script located in the *scripts* folder.
 ```./run.sh```
+
+## Commands
+
+* scan
+* locate
+* whois
+* whoami
+* meta
