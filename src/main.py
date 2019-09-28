@@ -1,12 +1,12 @@
 import datetime
 import os
 import json
+import socket    
 from port_scanner import search
 from ip2geotools.databases.noncommercial import DbIpCity
 
 
-# TODO: fix threading issue: look into thread pool
-# TODO: fix the ip lookup, not liking the module
+# TODO:=fix issue with all threads having same Thread ID, is it true multithreading?
 # TODO: look at whois
 
 
@@ -14,8 +14,8 @@ class TextColors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
     END = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
@@ -28,15 +28,29 @@ def displayASCII():
     print("| |    / _ \| '_ \|  _| | '_ \ / _ \ __|")
     print("| |___| (_) | | | | | | | | | |  __/ |_ ")
     print(" \_____\___/|_| |_|_| |_|_| |_|\___|\__|\n")     
-    print("--help for menu")
-    print("--quit to exit\n")
+    print("--help or -h for menu")
+    print("--quit or -q to exit\n")
 
 
-def getMetaData(file, outfile=False):
-    metadata = ""
+def prettyListPrint(ugly_list, message):
+    size = len(ugly_list)
+    if size == 0:
+        print(TextColors.RED + "[\n    Empty\n]\n" + TextColors.END)
+        return
+    print(TextColors.GREEN + "[ " + message + TextColors.END)
+    for i in range(0, size, 3):
+        print(TextColors.GREEN + ("    %s" % ugly_list[i]) + TextColors.END, end="")
+        if i+1 < size:
+            print(TextColors.GREEN + (" %s" % ugly_list[i+1]) + TextColors.END, end="")
+        if i+2 < size:
+            print(TextColors.GREEN + (" %s" % ugly_list[i+2]) + TextColors.END)
+    print(TextColors.GREEN + "\n]\n" + TextColors.END)
+
+
+def getMetaData(file):
     try:
         stats = os.stat(file)
-        metadata += "File Size: " + str(stats.st_size) + " bytes\n"
+        metadata = "File Size: " + str(stats.st_size) + " bytes\n"
         metadata += "File Modified: " + str(datetime.datetime.fromtimestamp(stats.st_mtime / 1000.0)) + "\n"
         metadata += "I-node: " + str(stats.st_ino) + "\n"
         metadata += "Device: " + str(stats.st_dev) + "\n"
@@ -44,33 +58,30 @@ def getMetaData(file, outfile=False):
         metadata += "User Id (uid): " + str(stats.st_uid) + "\n"
         metadata += "Group Id (gid): " + str(stats.st_gid) + "\n"
         metadata += "NOTE: On a Windows systems these values may not be accurate\n"
-        if outfile:
-            f = open("meta-data-"+file, "w+")
-            f.write(metadata)
-            f.close()
-        else:
-            print(metadata)
+        print(metadata)
     except:
         print("ERROR: Failed to get information from", file)
 
 
-def getIpAddressData(ipaddr, outfile=False):
-    data = ""
-    # try:
-    response = DbIpCity.get(ipaddr, api_key="free")
-    with open("ipaddr-location.json", "w+") as f:
-        f.dump(response.to_json(), f, indent=4)
-        f.close()
-        return
-    data += reponse.ip_address + "\n"
-    data += "City: " + reponse.city + "\n"
-    data += "Country: " + reponse.country + "\n"
-    data += "Region: " + reponse.region + "\n"
-    data += "Latitude: " + reponse.latitude + "\n"
-    data += "Longitude: " + response.longitude + "\n"
-    print(data)
-    # except:
-        # print("Could not fetch location for", ipaddr)
+def whoAmI():
+    hostname = socket.gethostname()    
+    ipaddr = socket.gethostbyname(hostname)    
+    print("Your computer's name is:", hostname)    
+    print("Your computer's IP address is:", ipaddr) 
+
+
+def getIpAddressData(ipaddr):
+    try:
+        response = DbIpCity.get(ipaddr, api_key="free")
+        data = "IP: " + response.ip_address + "\n"
+        data += "City: " + response.city + "\n"
+        data += "Country: " + response.country + "\n"
+        data += "Region: " + response.region + "\n"
+        data += "Latitude: " + str(response.latitude) + "\n"
+        data += "Longitude: " + str(response.longitude) + "\n"
+        print(data)
+    except:
+        print(TextColors.RED + "Could not fetch location for " + ipaddr + TextColors.END)
 
 
 def whoisLookup(ipaddr, outfile=None):
@@ -95,16 +106,15 @@ def printHelpMenu():
     print("\t-   Usage: whois IP_ADDRESS")
     print("\t- Example: whois 127.0.0.1\n")
 
+    print("whoami")
+    print("\n\t- Retrieve IP address and name of your device")
+    print("\t-   Usage: whoami\n")
+
     print("meta")
     print("\n\t- Displays meta data about a file")
     print("\t-   Usage: meta SOME_FILE")
     print("\t- Example: meta ./src/file.txt\n")
-
-    print(TextColors.GREEN + "---- Optional Flags ----" + TextColors.END)
-    print("\n-d")
-    print("\n\t- Dumps the contents to a file")
-    print("\t- Usage: -d file.txt\n")
-
+    
 
 if __name__ == "__main__":
 
@@ -112,11 +122,11 @@ if __name__ == "__main__":
     while True:
 
         # Read in input from the user and split it
-        command = str(input(TextColors.BLUE + "command$ " + TextColors.END))
-        if command == "--help":
+        command = str(input(TextColors.BLUE + "command$ " + TextColors.END)).strip()
+        if command == "--help" or command == "-h":
             printHelpMenu()
             continue
-        if command == "--quit":
+        if command == "--quit" or command == "-q":
             print("\nGoodbye!")
             break
         tokens = command.split(" ")
@@ -125,7 +135,10 @@ if __name__ == "__main__":
         # Scan available ports on a network
         if command.startswith("scan"):
             if argc == 4:
-                search(tokens[1], tokens[2], tokens[3])
+                results = search(tokens[1], tokens[2], tokens[3])
+                prettyListPrint(results, "Open Ports Found")
+            else:
+                print("USAGE: scan IP_ADDRESS LOWER_PORT UPPER_PORT")
         
         # Get the location of the given IP address
         elif command.startswith("locate"):
@@ -140,7 +153,11 @@ if __name__ == "__main__":
                 whoisLookup(tokens[1], None)
             else:
                 print("USAGE: whois 127.0.0.1")
-        
+
+        # Get information about your device
+        elif command.startswith("whoami"):
+            whoAmI()
+
         # Get meta data about a file
         elif command.startswith("meta"):
             if argc == 2:
