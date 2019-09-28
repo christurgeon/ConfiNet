@@ -9,7 +9,7 @@ sudo apt update
 sudo apt install docker.io
 ```
 
-You might run into issues with connecting to the Docker daemon. You must alter permissionsand start the service.
+You might run into issues with connecting to the Docker daemon. You must alter permissions and start the service.
 ```
 sudo groupadd docker
 sudo usermod -aG docker $(whoami)
