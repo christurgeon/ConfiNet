@@ -24,7 +24,7 @@ sudo service start docker
 
 ## Commands
 
-* scan
-* locate
-* whoami
-* meta
+* scan - find open ports provided an IP address
+* locate - find out location information given an IP address
+* whoami - find out IP address about your machine
+* meta - find out meta data about a file(s)
