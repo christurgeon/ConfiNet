@@ -1,6 +1,6 @@
 # ConfiNet
 
-ConfiNet is a command line application with useful networking tools such as port scanning, locating IP addresses, etc. It provides a wrapper to tools such as *whois*. To try it out, simply build the container, run the container, and you're off and running. 
+ConfiNet is a command line application with useful networking tools such as port scanning, locating IP addresses, etc. To try it out, simply build the container, run the container, and you're off and running. 
 
 ## Instructions to Run
 1. Upgrade *apt* and install Docker if you do not already have it installed on your machine.
@@ -26,6 +26,5 @@ sudo service start docker
 
 * scan
 * locate
-* whois
 * whoami
 * meta
