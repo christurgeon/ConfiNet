@@ -6,10 +6,6 @@ from port_scanner import search
 from ip2geotools.databases.noncommercial import DbIpCity
 
 
-# TODO:=fix issue with all threads having same Thread ID, is it true multithreading?
-# TODO: look at whois
-
-
 class TextColors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
