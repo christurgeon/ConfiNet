@@ -1,7 +1,7 @@
 # ConfiNet
 
 
-ConfiNet is a command line application with useful networking tools such as port scanning, locating IP addresses, etc. To try it out, simply run the script.
+ConfiNet is a command line application with useful networking tools such as port scanning, locating IP addresses, etc. To try it out, ensure that you have pip3 installed for Python3 then simply run the script.
 
 ## Instructions to Run
 ```./run.sh```
